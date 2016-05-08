@@ -28,6 +28,7 @@
 #include <xkbcommon/xkbcommon-x11.h>
 #include <cairo.h>
 #include <cairo/cairo-xcb.h>
+#include <SDL2/SDL_image.h>
 
 #include "i3lock.h"
 #include "xcb.h"
@@ -75,6 +76,7 @@ static struct xkb_compose_state *xkb_compose_state;
 static uint8_t xkb_base_event;
 static uint8_t xkb_base_error;
 
+SDL_Surface *sdl_surface = NULL;
 cairo_surface_t *img = NULL;
 bool tile = false;
 bool ignore_empty_password = false;
@@ -932,8 +934,15 @@ int main(int argc, char *argv[]) {
                                  (uint32_t[]){XCB_EVENT_MASK_STRUCTURE_NOTIFY});
 
     if (image_path) {
+        IMG_Init(IMG_INIT_TIF);
+        sdl_surface = IMG_Load(image_path);
         /* Create a pixmap to render on, fill it with the background color */
-        img = cairo_image_surface_create_from_png(image_path);
+        img = cairo_image_surface_create_for_data(
+            (unsigned char*)sdl_surface->pixels,
+            CAIRO_FORMAT_RGB24,
+            sdl_surface->w,
+            sdl_surface->h,
+            sdl_surface->pitch);
         /* In case loading failed, we just pretend no -i was specified. */
         if (cairo_surface_status(img) != CAIRO_STATUS_SUCCESS) {
             fprintf(stderr, "Could not load image \"%s\": %s\n",
